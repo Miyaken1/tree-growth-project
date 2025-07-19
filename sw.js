@@ -1,17 +1,18 @@
 // Service Worker for Tree Growth Project
-const CACHE_NAME = 'tree-growth-v1';
+const CACHE_NAME = 'tree-growth-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/stats.html',
-  '/admin.html',
-  '/js/main.js',
-  '/js/stats.js',
-  '/js/admin.js',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
-  'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js'
+  '/tree-growth-project/',
+  '/tree-growth-project/index.html',
+  '/tree-growth-project/stats.html',
+  '/tree-growth-project/admin.html',
+  '/tree-growth-project/assets/tree_01.webp',
+  '/tree-growth-project/assets/tree_02.webp',
+  '/tree-growth-project/assets/tree_03.webp',
+  '/tree-growth-project/assets/tree_04.webp',
+  '/tree-growth-project/assets/tree_05.webp',
+  '/tree-growth-project/assets/tree_06.webp',
+  '/tree-growth-project/assets/tree_07.webp',
+  '/tree-growth-project/assets/tree_08.webp'
 ];
 
 // Install event

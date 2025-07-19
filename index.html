@@ -16,38 +16,65 @@
         .hero-section { min-height: 100vh; background: linear-gradient(135deg, #87a96b, #4a7c59); }
         .loading { opacity: 0; transition: opacity 0.3s ease-in-out; }
         .loaded { opacity: 1; }
+        
+        /* Inline critical Tailwind utilities */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .text-center { text-align: center; }
+        .text-white { color: white; }
+        .bg-white { background-color: white; }
+        .fixed { position: fixed; }
+        .top-0 { top: 0; }
+        .left-0 { left: 0; }
+        .right-0 { right: 0; }
+        .z-50 { z-index: 50; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-12 { margin-bottom: 3rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .font-bold { font-weight: 700; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .hover\:bg-leaf-green:hover { background-color: #4a7c59; }
+        .transition-colors { transition-property: color, background-color; transition-duration: 0.3s; }
+        
+        /* Custom colors */
+        .forest-green { color: #2d5016; }
+        .leaf-green { color: #4a7c59; }
+        .sage-green { color: #87a96b; }
+        .bg-forest-green { background-color: #2d5016; }
+        .bg-leaf-green { background-color: #4a7c59; }
+        .bg-sage-green { background-color: #87a96b; }
+        
+        @media (min-width: 768px) {
+            .md\:text-6xl { font-size: 3.75rem; }
+            .md\:text-2xl { font-size: 1.5rem; }
+            .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
     </style>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Defer non-critical CSS -->
+    <link rel="stylesheet" href="https://cdn.tailwindcss.com" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.tailwindcss.com"></noscript>
     
-    <!-- Swiper CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    
-    <!-- Custom Tailwind Config -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'forest-green': '#2d5016',
-                        'leaf-green': '#4a7c59',
-                        'sage-green': '#87a96b',
-                        'earth-brown': '#8b4513',
-                        'sky-blue': '#87ceeb',
-                        'cream': '#f5f5dc'
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Defer Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
 </head>
 <body class="loading">
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm shadow-sm">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
-                <h1 class="text-xl font-bold text-forest-green">樹の成長プロジェクト</h1>
+                <h1 class="text-xl font-bold forest-green">樹の成長プロジェクト</h1>
                 <button id="scroll-to-top" class="bg-forest-green text-white p-2 rounded-full hover:bg-leaf-green transition-colors" aria-label="トップに戻る">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -78,49 +105,37 @@
     <!-- Tree Growth Visualization -->
     <section class="py-16 bg-gradient-to-b from-sage-green to-cream">
         <div class="container mx-auto px-4">
-            <h3 class="text-3xl font-bold text-center mb-12 text-forest-green">樹の成長プロジェクト</h3>
+            <h3 class="text-3xl font-bold text-center mb-12 forest-green">樹の成長プロジェクト</h3>
             <p class="text-center text-lg mb-8 text-gray-700">自然と共に成長する、みんなのプロジェクト</p>
             
-            <!-- Swiper Container with lazy loading -->
-            <div class="swiper mySwiper max-w-4xl mx-auto mb-8" style="height: 400px;">
-                <div class="swiper-wrapper">
-                    <!-- Slides with lazy loading -->
-                    <div class="swiper-slide bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_01.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階1" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+            <!-- Simple image gallery instead of Swiper for better performance -->
+            <div class="max-w-4xl mx-auto mb-8">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_01.webp" class="w-full h-32 object-cover" alt="樹の成長段階1" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_02.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階2" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_02.webp" class="w-full h-32 object-cover" alt="樹の成長段階2" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_03.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階3" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-green-600 to-green-800 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_03.webp" class="w-full h-32 object-cover" alt="樹の成長段階3" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-green-700 to-green-900 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_04.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階4" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-green-700 to-green-900 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_04.webp" class="w-full h-32 object-cover" alt="樹の成長段階4" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_05.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階5" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_05.webp" class="w-full h-32 object-cover" alt="樹の成長段階5" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_06.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階6" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_06.webp" class="w-full h-32 object-cover" alt="樹の成長段階6" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_07.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階7" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_07.webp" class="w-full h-32 object-cover" alt="樹の成長段階7" loading="lazy">
                     </div>
-                    <div class="swiper-slide bg-gradient-to-br from-teal-600 to-teal-800 flex items-center justify-center text-white text-2xl font-bold rounded-lg shadow-lg">
-                        <img data-src="assets/tree_08.webp" class="swiper-lazy w-full h-full object-cover rounded-lg" alt="樹の成長段階8" loading="lazy">
-                        <div class="swiper-lazy-preloader"></div>
+                    <div class="bg-gradient-to-br from-teal-600 to-teal-800 rounded-lg shadow-lg overflow-hidden">
+                        <img src="assets/tree_08.webp" class="w-full h-32 object-cover" alt="樹の成長段階8" loading="lazy">
                     </div>
                 </div>
-                <div class="swiper-pagination"></div>
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
             </div>
         </div>
     </section>
@@ -128,7 +143,7 @@
     <!-- Project Results -->
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
-            <h3 class="text-3xl font-bold text-center mb-4 text-forest-green">プロジェクトの成果</h3>
+            <h3 class="text-3xl font-bold text-center mb-4 forest-green">プロジェクトの成果</h3>
             <p class="text-center text-gray-600 mb-12">みんなで育てる樹の成長記録</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -194,80 +209,14 @@
         </div>
     </footer>
 
-    <!-- Scripts loaded asynchronously -->
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
-    <script defer>
+    <!-- Minimal JavaScript for essential functionality -->
+    <script>
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', function() {
             // Remove loading class
             document.body.classList.remove('loading');
             document.body.classList.add('loaded');
             
-            // Initialize Swiper with accessibility and lazy loading
-            const swiper = new Swiper('.mySwiper', {
-                slidesPerView: 1,
-                spaceBetween: 30,
-                loop: true,
-                lazy: {
-                    loadPrevNext: true,
-                    loadPrevNextAmount: 2,
-                },
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                    bulletActiveClass: 'swiper-pagination-bullet-active',
-                },
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
-                },
-                autoplay: {
-                    delay: 4000,
-                    disableOnInteraction: false,
-                    pauseOnMouseEnter: true,
-                },
-                a11y: {
-                    enabled: true,
-                    slideRole: 'group',
-                    slideLabelMessage: '樹の成長段階 {{index}} / {{slidesLength}}',
-                },
-                keyboard: {
-                    enabled: true,
-                    onlyInViewport: true,
-                },
-                breakpoints: {
-                    640: {
-                        slidesPerView: 1,
-                    },
-                    768: {
-                        slidesPerView: 1,
-                    },
-                    1024: {
-                        slidesPerView: 1,
-                    },
-                }
-            });
-
-            // Intersection Observer for counter animation
-            const observerOptions = {
-                threshold: 0.5,
-                rootMargin: '0px 0px -100px 0px'
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        animateCounters();
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, observerOptions);
-
-            const countersSection = document.querySelector('#total-dialogues').closest('section');
-            if (countersSection) {
-                observer.observe(countersSection);
-            }
-
             // Smooth scroll to top
             document.getElementById('scroll-to-top').addEventListener('click', () => {
                 window.scrollTo({
@@ -281,33 +230,9 @@
                 window.location.href = 'stats.html';
             });
 
-            // API call to get real data
+            // API call to get real data (simplified)
             fetchLatestData();
         });
-
-        // Counter animation function
-        function animateCounters() {
-            const totalDialogues = document.getElementById('total-dialogues');
-            const totalParticipants = document.getElementById('total-participants');
-            
-            animateCounter(totalDialogues, 1247, 2000);
-            animateCounter(totalParticipants, 89, 1500);
-        }
-
-        function animateCounter(element, target, duration) {
-            let start = 0;
-            const increment = target / (duration / 16);
-            
-            const timer = setInterval(() => {
-                start += increment;
-                if (start >= target) {
-                    element.textContent = target.toLocaleString();
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.floor(start).toLocaleString();
-                }
-            }, 16);
-        }
 
         // Fetch latest data from API
         async function fetchLatestData() {
@@ -339,7 +264,7 @@
         // Service Worker registration for caching
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/tree-growth-project/sw.js')
                     .then(registration => console.log('SW registered'))
                     .catch(error => console.log('SW registration failed'));
             });
