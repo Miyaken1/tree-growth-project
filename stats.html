@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計分析 - Tree Growth Visualization</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #1E90FF;
+            --secondary-color: #38B48B;
+            --bg-color: #F7FAFC;
+        }
+        
+        .header-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .stat-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="font-sans bg-gradient-to-br from-blue-50 to-green-50 min-h-screen">
+    <!-- Header -->
+    <header class="header-glass fixed top-0 left-0 right-0 z-50 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">📊</span>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">統計分析</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-gray-600 hover:text-gray-800 transition-colors">ホーム</a>
+                <a href="stats.html" class="text-blue-600 font-semibold hover:text-blue-800 transition-colors">統計</a>
+                <a href="admin.html" class="text-gray-600 hover:text-gray-800 transition-colors">管理</a>
+            </nav>
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 p-4 bg-white rounded-lg shadow-lg">
+            <a href="index.html" class="block py-2 text-gray-600">ホーム</a>
+            <a href="stats.html" class="block py-2 text-blue-600 font-semibold">統計</a>
+            <a href="admin.html" class="block py-2 text-gray-600">管理</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Period Selection -->
+            <div class="card-glass rounded-xl p-6 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">📅</span>
+                    期間設定
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label for="start-date" class="block text-sm font-medium text-gray-700 mb-2">開始日</label>
+                        <input type="date" id="start-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="end-date" class="block text-sm font-medium text-gray-700 mb-2">終了日</label>
+                        <input type="date" id="end-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <button id="update-stats" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                            データ更新
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="stats-grid mb-8 fade-in">
+                <div class="stat-card card-glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">総対話数</h3>
+                        <span class="text-3xl">💬</span>
+                    </div>
+                    <div class="text-3xl font-bold text-blue-600 pulse-animation" id="summary-total-count">-</div>
+                    <div class="text-sm text-gray-500 mt-2">前期間比: <span id="count-change" class="font-medium">-</span></div>
+                </div>
+
+                <div class="stat-card card-glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">参加者数</h3>
+                        <span class="text-3xl">👥</span>
+                    </div>
+                    <div class="text-3xl font-bold text-green-600" id="summary-participants">-</div>
+                    <div class="text-sm text-gray-500 mt-2">アクティブ率: <span id="active-rate" class="font-medium">-</span></div>
+                </div>
+
+                <div class="stat-card card-glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">平均対話数</h3>
+                        <span class="text-3xl">📈</span>
+                    </div>
+                    <div class="text-3xl font-bold text-purple-600" id="average-conversations">-</div>
+                    <div class="text-sm text-gray-500 mt-2">1人あたり</div>
+                </div>
+
+                <div class="stat-card card-glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">成長段階</h3>
+                        <span class="text-3xl">🌳</span>
+                    </div>
+                    <div class="text-2xl font-bold text-emerald-600" id="current-stage">-</div>
+                    <div class="text-sm text-gray-500 mt-2" id="stage-progress">-</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Organization Breakdown -->
+                <div class="card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">🏢</span>
+                        所属別参加状況
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="organizationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Role Breakdown -->
+                <div class="card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">👤</span>
+                        役割別参加状況
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="roleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Breakdown Table -->
+            <div class="card-glass rounded-xl p-6 fade-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">📋</span>
+                    詳細分析
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 rounded-lg">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">所属</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700">役割</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700">参加者数</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700">対話数</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700">平均</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700">参加率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdown-table" class="divide-y divide-gray-200">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p class="text-gray-700">統計データを読み込み中...</p>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwmeveXSc0ihOnOgQhtX5Mtaj1QWiATUlGXEIJwlBAgl_yGe7ULgjpVfYwC8IWiOS4/exec', // Replace with your actual URL
+            GROWTH_STAGES: [
+                { name: '種子', min: 0, max: 10, icon: '🌱' },
+                { name: '新芽', min: 11, max: 50, icon: '🌱' },
+                { name: '若木', min: 51, max: 150, icon: '🌿' },
+                { name: '成長する木', min: 151, max: 300, icon: '🌳' },
+                { name: '成熟した木', min: 301, max: 500, icon: '🌳' },
+                { name: '老木', min: 501, max: 800, icon: '🌲' },
+                { name: '古木', min: 801, max: 1200, icon: '🌲' },
+                { name: '伝説の木', min: 1201, max: Infinity, icon: '🌳' }
+            ]
+        };
+
+        let organizationChart = null;
+        let roleChart = null;
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Initialize date inputs
+        function initializeDateInputs() {
+            const today = new Date();
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+
+            document.getElementById('start-date').value = oneMonthAgo.toISOString().split('T')[0];
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+        }
+
+        // Chart initialization
+        function initializeCharts() {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            };
+
+            // Organization Chart
+            const orgCtx = document.getElementById('organizationChart').getContext('2d');
+            organizationChart = new Chart(orgCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '参加者数',
+                        data: [],
+                        backgroundColor: 'rgba(30, 144, 255, 0.8)',
+                        borderColor: 'rgba(30, 144, 255, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        title: {
+                            display: true,
+                            text: '所属別参加者数',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Role Chart
+            const roleCtx = document.getElementById('roleChart').getContext('2d');
+            roleChart = new Chart(roleCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '参加者数',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(30, 144, 255, 0.8)',
+                            'rgba(56, 180, 139, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(30, 144, 255, 1)',
+                            'rgba(56, 180, 139, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 205, 86, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '役割別参加者分布',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch statistics data
+        async function fetchStatistics() {
+            try {
+                showLoading(true);
+
+                // Get date range
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+
+                // Mock data for demo - replace with actual API call
+                const mockData = {
+                    summary: {
+                        totalCount: Math.floor(Math.random() * 1500) + 500,
+                        totalParticipants: Math.floor(Math.random() * 200) + 80,
+                        previousTotalCount: Math.floor(Math.random() * 1200) + 400,
+                        averageConversations: 0,
+                        activeRate: 0
+                    },
+                    organizationBreakdown: {
+                        '大学': Math.floor(Math.random() * 50) + 20,
+                        '中学校': Math.floor(Math.random() * 30) + 15,
+                        '小学校': Math.floor(Math.random() * 40) + 25,
+                        '細分化機関': Math.floor(Math.random() * 20) + 10
+                    },
+                    roleBreakdown: {
+                        '教師': Math.floor(Math.random() * 40) + 20,
+                        '学生': Math.floor(Math.random() * 60) + 30,
+                        '研究者': Math.floor(Math.random() * 25) + 15,
+                        '管理者': Math.floor(Math.random() * 20) + 10,
+                        'その他': Math.floor(Math.random() * 15) + 5
+                    },
+                    detailedBreakdown: [
+                        { organization: '大学', role: '教師', participants: 25, conversations: 450, average: 18 },
+                        { organization: '大学', role: '学生', participants: 35, conversations: 280, average: 8 },
+                        { organization: '中学校', role: '教師', participants: 18, conversations: 360, average: 20 },
+                        { organization: '小学校', role: '教師', participants: 22, conversations: 330, average: 15 },
+                        { organization: '細分化機関', role: '研究者', participants: 12, conversations: 240, average: 20 }
+                    ]
+                };
+
+                // Calculate derived values
+                mockData.summary.averageConversations = Math.round(mockData.summary.totalCount / mockData.summary.totalParticipants);
+                mockData.summary.activeRate = Math.round((mockData.summary.totalParticipants / 300) * 100); // Assuming 300 total registered users
+
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                updateSummaryStatistics(mockData.summary);
+                updateCharts(mockData.organizationBreakdown, mockData.roleBreakdown);
+                updateDetailedTable(mockData.detailedBreakdown);
+
+            } catch (error) {
+                console.error('Error fetching statistics:', error);
+                showError('統計データの取得に失敗しました');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateSummaryStatistics(summary) {
+            // Update summary cards
+            document.getElementById('summary-total-count').textContent = summary.totalCount.toLocaleString();
+            document.getElementById('summary-participants').textContent = summary.totalParticipants.toLocaleString();
+            document.getElementById('average-conversations').textContent = summary.averageConversations.toLocaleString();
+
+            // Calculate and display change
+            const change = summary.totalCount - summary.previousTotalCount;
+            const changePercent = Math.round((change / summary.previousTotalCount) * 100);
+            const changeElement = document.getElementById('count-change');
+            
+            if (change > 0) {
+                changeElement.textContent = `+${changePercent}%`;
+                changeElement.className = 'font-medium text-green-600';
+            } else if (change < 0) {
+                changeElement.textContent = `${changePercent}%`;
+                changeElement.className = 'font-medium text-red-600';
+            } else {
+                changeElement.textContent = '±0%';
+                changeElement.className = 'font-medium text-gray-600';
+            }
+
+            // Update active rate
+            document.getElementById('active-rate').textContent = `${summary.activeRate}%`;
+
+            // Update growth stage
+            const stage = CONFIG.GROWTH_STAGES.find(s => 
+                summary.totalCount >= s.min && summary.totalCount <= s.max
+            );
+            
+            if (stage) {
+                document.getElementById('current-stage').innerHTML = `${stage.icon} ${stage.name}`;
+                
+                const progress = stage.max === Infinity ? 100 : 
+                    Math.round(((summary.totalCount - stage.min) / (stage.max - stage.min)) * 100);
+                
+                document.getElementById('stage-progress').textContent = 
+                    stage.max === Infinity ? '最終段階達成' : `次の段階まで ${progress}%`;
+            }
+        }
+
+        function updateCharts(orgData, roleData) {
+            // Update organization chart
+            organizationChart.data.labels = Object.keys(orgData);
+            organizationChart.data.datasets[0].data = Object.values(orgData);
+            organizationChart.update('active');
+
+            // Update role chart
+            roleChart.data.labels = Object.keys(roleData);
+            roleChart.data.datasets[0].data = Object.values(roleData);
+            roleChart.update('active');
+        }
+
+        function updateDetailedTable(detailedData) {
+            const tbody = document.getElementById('breakdown-table');
+            tbody.innerHTML = '';
+
+            detailedData.forEach(row => {
+                const participationRate = Math.round((row.participants / 50) * 100); // Assuming 50 max per category
+                
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900">${row.organization}</td>
+                    <td class="px-4 py-3 text-gray-700">${row.role}</td>
+                    <td class="px-4 py-3 text-center font-medium">${row.participants}</td>
+                    <td class="px-4 py-3 text-center">${row.conversations}</td>
+                    <td class="px-4 py-3 text-center">${row.average}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            participationRate >= 70 ? 'bg-green-100 text-green-800' :
+                            participationRate >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">
+                            ${participationRate}%
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.remove('hidden');
+            } else {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2">⚠️</span>
+                    <span>${message}</span>
+                    <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Event listeners
+        document.getElementById('update-stats').addEventListener('click', fetchStatistics);
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDateInputs();
+            initializeCharts();
+            fetchStatistics();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>樹木の成長を可視化 - Tree Growth Visualization</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #1E90FF;
+            --secondary-color: #38B48B;
+            --bg-color: #F7FAFC;
+        }
+        
+        .swiper {
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .swiper-slide {
+            text-align: center;
+            font-size: 18px;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .slide-overlay {
+            background: linear-gradient(135deg, rgba(30, 144, 255, 0.8), rgba(56, 180, 139, 0.8));
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .counter-float {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .header-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tree-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-100">
+    <!-- Header -->
+    <header class="header-glass fixed top-0 left-0 right-0 z-50 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">🌳</span>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">樹木の成長可視化</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-blue-600 font-semibold hover:text-blue-800 transition-colors">ホーム</a>
+                <a href="stats.html" class="text-gray-600 hover:text-gray-800 transition-colors">統計</a>
+                <a href="admin.html" class="text-gray-600 hover:text-gray-800 transition-colors">管理</a>
+            </nav>
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 p-4 bg-white rounded-lg shadow-lg">
+            <a href="index.html" class="block py-2 text-blue-600 font-semibold">ホーム</a>
+            <a href="stats.html" class="block py-2 text-gray-600">統計</a>
+            <a href="admin.html" class="block py-2 text-gray-600">管理</a>
+        </div>
+    </header>
+
+    <!-- Floating Counter -->
+    <div class="counter-float fade-in" aria-live="polite">
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">リアルタイム統計</h3>
+        <div class="space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-600">累計対話数</span>
+                <span id="total-count" class="text-lg font-bold text-blue-600 pulse-animation">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-600">参加者数</span>
+                <span id="total-participants" class="text-lg font-bold text-green-600">-</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-2" id="last-updated">更新中...</div>
+        </div>
+    </div>
+
+    <!-- Main Content - Swiper -->
+    <main class="swiper">
+        <div class="swiper-wrapper">
+            <!-- Slide 1: Seed -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1920&h=1080&fit=crop')" role="group" aria-label="種子の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌱</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">種子</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">すべての始まり。小さな一歩から偉大な成長が始まります。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>0-10</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Sprout -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=1920&h=1080&fit=crop')" role="group" aria-label="新芽の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌱</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">新芽</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">最初の葉が顔を出し、成長への意欲を示しています。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>11-50</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Young Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1920&h=1080&fit=crop')" role="group" aria-label="若木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌿</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">若木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">しっかりとした幹と枝を持ち、安定した成長を続けています。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>51-150</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: Growing Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=1920&h=1080&fit=crop')" role="group" aria-label="成長する木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌳</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">成長する木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">豊かな葉をつけ、周囲に影を提供できるまでに成長しました。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>151-300</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: Mature Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop')" role="group" aria-label="成熟した木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌳</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">成熟した木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">風格ある佇まいで、多くの生命を支える存在になりました。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>301-500</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6: Old Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop')" role="group" aria-label="老木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌲</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">老木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">長い年月を経て、深い知恵と経験を積んだ貫禄ある姿です。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>501-800</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 7: Ancient Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&h=1080&fit=crop')" role="group" aria-label="古木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌲</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">古木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">世代を超えて受け継がれる、神聖な存在として敬われています。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>801-1200</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 8: Legendary Tree -->
+            <div class="swiper-slide" style="background-image: url('https://images.unsplash.com/photo-1574263867128-0945c4693c5d?w=1920&h=1080&fit=crop')" role="group" aria-label="伝説の木の段階">
+                <div class="slide-overlay">
+                    <div class="tree-icon">🌳</div>
+                    <h2 class="text-4xl md:text-6xl font-bold mb-4">伝説の木</h2>
+                    <p class="text-lg md:text-xl max-w-2xl px-4">数多くの物語と共にあり、永遠に語り継がれる伝説的な存在です。</p>
+                    <div class="mt-8 bg-white bg-opacity-20 rounded-lg p-4">
+                        <p class="text-sm">必要な対話数: <strong>1200+</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-scrollbar"></div>
+    </main>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p class="text-gray-700">データを読み込み中...</p>
+        </div>
+    </div>
+
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwmeveXSc0ihOnOgQhtX5Mtaj1QWiATUlGXEIJwlBAgl_yGe7ULgjpVfYwC8IWiOS4/exec', // Replace with your actual URL
+            UPDATE_INTERVAL: 60000, // 60 seconds
+            THRESHOLDS: [
+                { min: 0, max: 10, slide: 0 },
+                { min: 11, max: 50, slide: 1 },
+                { min: 51, max: 150, slide: 2 },
+                { min: 151, max: 300, slide: 3 },
+                { min: 301, max: 500, slide: 4 },
+                { min: 501, max: 800, slide: 5 },
+                { min: 801, max: 1200, slide: 6 },
+                { min: 1201, max: Infinity, slide: 7 }
+            ]
+        };
+
+        // Initialize Swiper
+        const swiper = new Swiper('.swiper', {
+            direction: 'horizontal',
+            loop: false,
+            speed: 1000,
+            effect: 'fade',
+            fadeEffect: {
+                crossFade: true
+            },
+            
+            // Accessibility
+            a11y: {
+                enabled: true,
+                slideRole: 'group',
+                prevSlideMessage: '前のスライド',
+                nextSlideMessage: '次のスライド'
+            },
+            
+            // Navigation arrows
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            
+            // Pagination
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+                renderBullet: function (index, className) {
+                    const stages = ['種子', '新芽', '若木', '成長', '成熟', '老木', '古木', '伝説'];
+                    return `<span class="${className}" title="${stages[index]}">${stages[index]}</span>`;
+                }
+            },
+            
+            // Scrollbar
+            scrollbar: {
+                el: '.swiper-scrollbar',
+                draggable: true,
+            },
+            
+            // Autoplay (disabled by default)
+            autoplay: false,
+            
+            // Touch settings
+            touchRatio: 1,
+            touchAngle: 45,
+            grabCursor: true
+        });
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // API Functions
+        async function fetchData() {
+            try {
+                showLoading(true);
+                
+                // Mock data for demo - replace with actual API call
+                const mockData = {
+                    totalCount: Math.floor(Math.random() * 1500) + 100,
+                    totalParticipants: Math.floor(Math.random() * 200) + 50,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                updateCounters(mockData.totalCount, mockData.totalParticipants);
+                updateTreeStage(mockData.totalCount);
+                updateTimestamp();
+                
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showError('データの取得に失敗しました');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateCounters(totalCount, totalParticipants) {
+            const countElement = document.getElementById('total-count');
+            const participantsElement = document.getElementById('total-participants');
+            
+            // Animate counter update
+            animateCounter(countElement, parseInt(countElement.textContent) || 0, totalCount);
+            animateCounter(participantsElement, parseInt(participantsElement.textContent) || 0, totalParticipants);
+        }
+
+        function animateCounter(element, from, to) {
+            const duration = 1000;
+            const steps = 60;
+            const stepValue = (to - from) / steps;
+            let current = from;
+            let step = 0;
+
+            const timer = setInterval(() => {
+                current += stepValue;
+                step++;
+                
+                if (step >= steps) {
+                    current = to;
+                    clearInterval(timer);
+                }
+                
+                element.textContent = Math.round(current).toLocaleString();
+                
+                // Add pulse animation on update
+                element.classList.add('pulse-animation');
+                setTimeout(() => element.classList.remove('pulse-animation'), 500);
+            }, duration / steps);
+        }
+
+        function updateTreeStage(totalCount) {
+            const threshold = CONFIG.THRESHOLDS.find(t => totalCount >= t.min && totalCount <= t.max);
+            if (threshold && swiper.activeIndex !== threshold.slide) {
+                swiper.slideTo(threshold.slide, 1000);
+            }
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('last-updated').textContent = `最終更新: ${timeString}`;
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.remove('hidden');
+            } else {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            // Create error notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2">⚠️</span>
+                    <span>${message}</span>
+                    <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial data fetch
+            fetchData();
+            
+            // Set up periodic updates
+            setInterval(fetchData, CONFIG.UPDATE_INTERVAL);
+            
+            // Add resize listener for responsive handling
+            window.addEventListener('resize', () => {
+                swiper.update();
+            });
+            
+            // Add intersection observer for image lazy loading
+            const images = document.querySelectorAll('.swiper-slide[style*="background-image"]');
+            const imageObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Image lazy loading logic can be added here
+                        imageObserver.unobserve(entry.target);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+        });
+
+        // Service Worker registration for PWA (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

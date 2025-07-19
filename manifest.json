@@ -1,0 +1,173 @@
+{
+  "name": "樹木の成長可視化システム",
+  "short_name": "Tree Growth",
+  "description": "対話数に応じて樹木の成長段階を可視化するインタラクティブなWebアプリケーション",
+  "version": "1.0.0",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1E90FF",
+  "background_color": "#F7FAFC",
+  "scope": "/",
+  "lang": "ja",
+  "dir": "ltr",
+  
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=72&h=72&fit=crop&crop=center",
+      "sizes": "72x72",
+      "type": "image/jpeg",
+      "purpose": "badge"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=96&h=96&fit=crop&crop=center",
+      "sizes": "96x96",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=128&h=128&fit=crop&crop=center",
+      "sizes": "128x128",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=144&h=144&fit=crop&crop=center",
+      "sizes": "144x144",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=152&h=152&fit=crop&crop=center",
+      "sizes": "152x152",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=192&h=192&fit=crop&crop=center",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=384&h=384&fit=crop&crop=center",
+      "sizes": "384x384",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=512&h=512&fit=crop&crop=center",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
+  ],
+  
+  "screenshots": [
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=540&h=720&fit=crop",
+      "sizes": "540x720",
+      "type": "image/jpeg",
+      "platform": "narrow",
+      "label": "メイン画面 - 樹木の成長段階"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=540&h=720&fit=crop",
+      "sizes": "540x720",
+      "type": "image/jpeg",
+      "platform": "narrow",
+      "label": "統計分析画面"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1280&h=720&fit=crop",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "platform": "wide",
+      "label": "デスクトップ版メイン画面"
+    }
+  ],
+  
+  "shortcuts": [
+    {
+      "name": "統計を見る",
+      "short_name": "統計",
+      "description": "参加状況の統計分析を表示",
+      "url": "/stats.html",
+      "icons": [
+        {
+          "src": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=96&h=96&fit=crop",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "管理画面",
+      "short_name": "管理",
+      "description": "システム設定の管理",
+      "url": "/admin.html",
+      "icons": [
+        {
+          "src": "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=96&h=96&fit=crop",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    }
+  ],
+  
+  "related_applications": [],
+  "prefer_related_applications": false,
+  
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+treegrowth",
+      "url": "/?action=%s"
+    }
+  ],
+  
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  
+  "display_override": [
+    "window-controls-overlay",
+    "minimal-ui",
+    "standalone",
+    "browser"
+  ],
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  
+  "handle_links": "preferred",
+  
+  "capture_links": "existing-client-navigate"
+}

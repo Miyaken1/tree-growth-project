@@ -1,0 +1,44 @@
+{
+  "name": "tree-growth-visualization",
+  "version": "1.0.0",
+  "description": "樹木の成長を可視化するWebシステム",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "dev": "python3 -m http.server 8080",
+    "build": "echo 'No build process required for static site'",
+    "test": "echo 'No tests specified'",
+    "lighthouse": "lhci autorun",
+    "lighthouse:local": "lhci autorun --config=lighthouserc-local.js",
+    "deploy": "gh-pages -d .",
+    "setup": "./scripts/setup.sh"
+  },
+  "keywords": [
+    "visualization",
+    "tree",
+    "growth",
+    "education",
+    "progress",
+    "web",
+    "pwa"
+  ],
+  "author": "Tree Growth Visualization Team",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_USERNAME/tree-growth-visualization#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/tree-growth-visualization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/tree-growth-visualization/issues"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.12.0",
+    "gh-pages": "^6.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

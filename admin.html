@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理画面 - Tree Growth Visualization</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #1E90FF;
+            --secondary-color: #38B48B;
+            --bg-color: #F7FAFC;
+        }
+        
+        .header-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .input-group {
+            transition: all 0.3s ease;
+        }
+        
+        .input-group:focus-within {
+            transform: scale(1.02);
+        }
+        
+        .success-animation {
+            animation: successPulse 0.6s ease-in-out;
+        }
+        
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
+    <!-- Header -->
+    <header class="header-glass fixed top-0 left-0 right-0 z-50 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-r from-red-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">⚙️</span>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">管理画面</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-gray-600 hover:text-gray-800 transition-colors">ホーム</a>
+                <a href="stats.html" class="text-gray-600 hover:text-gray-800 transition-colors">統計</a>
+                <a href="admin.html" class="text-purple-600 font-semibold hover:text-purple-800 transition-colors">管理</a>
+            </nav>
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 p-4 bg-white rounded-lg shadow-lg">
+            <a href="index.html" class="block py-2 text-gray-600">ホーム</a>
+            <a href="stats.html" class="block py-2 text-gray-600">統計</a>
+            <a href="admin.html" class="block py-2 text-purple-600 font-semibold">管理</a>
+        </div>
+    </header>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+        <div class="card-glass rounded-xl p-8 max-w-md w-full mx-4 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-white text-2xl">🔐</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">管理者認証</h2>
+                <p class="text-gray-600 mt-2">管理画面にアクセスするためのパスワードを入力してください</p>
+            </div>
+            
+            <form id="password-form" class="space-y-4">
+                <div class="input-group">
+                    <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
+                    <input type="password" id="admin-password" name="password" required
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                        認証
+                    </button>
+                    <button type="button" onclick="window.location.href='index.html'" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+            
+            <div id="auth-error" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                パスワードが正しくありません
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="admin-content" class="hidden pt-20 pb-8 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Welcome Section -->
+            <div class="card-glass rounded-xl p-6 mb-8 fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">管理画面へようこそ</h2>
+                        <p class="text-gray-600">システムの設定を管理できます</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-500">最終ログイン</div>
+                        <div class="text-sm font-medium text-gray-700" id="last-login">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Growth Stage Thresholds -->
+                <div class="section-card card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">🎯</span>
+                        成長段階の閾値設定
+                    </h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div id="thresholds-container">
+                            <!-- Threshold rows will be populated by JavaScript -->
+                        </div>
+                        
+                        <button id="add-threshold" class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors">
+                            + 新しい段階を追加
+                        </button>
+                    </div>
+                    
+                    <button id="save-thresholds" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all duration-300">
+                        閾値を保存
+                    </button>
+                </div>
+
+                <!-- Image URLs -->
+                <div class="section-card card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">🖼️</span>
+                        スライド画像設定
+                    </h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div id="images-container">
+                            <!-- Image URL rows will be populated by JavaScript -->
+                        </div>
+                        
+                        <button id="add-image" class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors">
+                            + 新しい画像を追加
+                        </button>
+                    </div>
+                    
+                    <button id="save-images" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300">
+                        画像URLを保存
+                    </button>
+                </div>
+
+                <!-- Period Settings -->
+                <div class="section-card card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">📅</span>
+                        期間設定
+                    </h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="input-group">
+                            <label for="period-start" class="block text-sm font-medium text-gray-700 mb-2">開始日</label>
+                            <input type="date" id="period-start" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="period-end" class="block text-sm font-medium text-gray-700 mb-2">終了日</label>
+                            <input type="date" id="period-end" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="update-interval" class="block text-sm font-medium text-gray-700 mb-2">更新間隔（秒）</label>
+                            <input type="number" id="update-interval" min="10" max="300" value="60" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <button id="save-period" class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-300">
+                        期間設定を保存
+                    </button>
+                </div>
+
+                <!-- System Status -->
+                <div class="section-card card-glass rounded-xl p-6 fade-in">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="mr-3">📊</span>
+                        システム状況
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">API ステータス</span>
+                            <span id="api-status" class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">正常</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">最終データ更新</span>
+                            <span id="last-update" class="text-sm text-gray-600">-</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">総データ件数</span>
+                            <span id="total-records" class="text-sm font-bold text-blue-600">-</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-medium text-gray-700">アクティブユーザー</span>
+                            <span id="active-users" class="text-sm font-bold text-green-600">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 space-y-2">
+                        <button id="refresh-status" class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors">
+                            ステータス更新
+                        </button>
+                        <button id="export-data" class="w-full bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors">
+                            データエクスポート
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+            <p class="text-gray-700">処理中...</p>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwmeveXSc0ihOnOgQhtX5Mtaj1QWiATUlGXEIJwlBAgl_yGe7ULgjpVfYwC8IWiOS4/exec', // Replace with your actual URL
+            PASSWORD_HASH: 'd74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1', // SHA-256 of "admin123"
+            DEFAULT_THRESHOLDS: [
+                { name: '種子', min: 0, max: 10, icon: '🌱' },
+                { name: '新芽', min: 11, max: 50, icon: '🌱' },
+                { name: '若木', min: 51, max: 150, icon: '🌿' },
+                { name: '成長する木', min: 151, max: 300, icon: '🌳' },
+                { name: '成熟した木', min: 301, max: 500, icon: '🌳' },
+                { name: '老木', min: 501, max: 800, icon: '🌲' },
+                { name: '古木', min: 801, max: 1200, icon: '🌲' },
+                { name: '伝説の木', min: 1201, max: -1, icon: '🌳' }
+            ],
+            DEFAULT_IMAGES: [
+                'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&h=1080&fit=crop',
+                'https://images.unsplash.com/photo-1574263867128-0945c4693c5d?w=1920&h=1080&fit=crop'
+            ]
+        };
+
+        let currentConfig = {
+            thresholds: [...CONFIG.DEFAULT_THRESHOLDS],
+            images: [...CONFIG.DEFAULT_IMAGES],
+            period: {
+                start: '',
+                end: '',
+                updateInterval: 60
+            }
+        };
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Password authentication
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        document.getElementById('password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('admin-password').value;
+            const hashedPassword = await hashPassword(password);
+            
+            if (hashedPassword === CONFIG.PASSWORD_HASH) {
+                // Authentication successful
+                document.getElementById('password-modal').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                
+                // Update last login
+                const now = new Date().toLocaleString('ja-JP');
+                document.getElementById('last-login').textContent = now;
+                localStorage.setItem('lastLogin', now);
+                
+                // Initialize admin interface
+                initializeAdmin();
+                
+                showSuccess('ログインしました');
+            } else {
+                // Authentication failed
+                document.getElementById('auth-error').classList.remove('hidden');
+                document.getElementById('admin-password').value = '';
+                
+                setTimeout(() => {
+                    document.getElementById('auth-error').classList.add('hidden');
+                }, 3000);
+            }
+        });
+
+        // Initialize admin interface
+        function initializeAdmin() {
+            loadConfiguration();
+            renderThresholds();
+            renderImages();
+            loadSystemStatus();
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('add-threshold').addEventListener('click', addThresholdRow);
+            document.getElementById('add-image').addEventListener('click', addImageRow);
+            document.getElementById('save-thresholds').addEventListener('click', saveThresholds);
+            document.getElementById('save-images').addEventListener('click', saveImages);
+            document.getElementById('save-period').addEventListener('click', savePeriod);
+            document.getElementById('refresh-status').addEventListener('click', loadSystemStatus);
+            document.getElementById('export-data').addEventListener('click', exportData);
+        }
+
+        function loadConfiguration() {
+            // Load saved configuration or use defaults
+            const savedConfig = localStorage.getItem('adminConfig');
+            if (savedConfig) {
+                currentConfig = { ...currentConfig, ...JSON.parse(savedConfig) };
+            }
+            
+            // Set period inputs
+            const today = new Date().toISOString().split('T')[0];
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            
+            document.getElementById('period-start').value = currentConfig.period.start || oneMonthAgo.toISOString().split('T')[0];
+            document.getElementById('period-end').value = currentConfig.period.end || today;
+            document.getElementById('update-interval').value = currentConfig.period.updateInterval || 60;
+            
+            // Load last login
+            const lastLogin = localStorage.getItem('lastLogin');
+            if (lastLogin) {
+                document.getElementById('last-login').textContent = lastLogin;
+            }
+        }
+
+        function renderThresholds() {
+            const container = document.getElementById('thresholds-container');
+            container.innerHTML = '';
+            
+            currentConfig.thresholds.forEach((threshold, index) => {
+                const row = createThresholdRow(threshold, index);
+                container.appendChild(row);
+            });
+        }
+
+        function createThresholdRow(threshold, index) {
+            const div = document.createElement('div');
+            div.className = 'flex space-x-2 items-center p-3 bg-gray-50 rounded-lg';
+            div.innerHTML = `
+                <input type="text" value="${threshold.icon}" placeholder="🌱" class="w-12 p-2 text-center border border-gray-300 rounded focus:ring-2 focus:ring-purple-500" data-field="icon" data-index="${index}">
+                <input type="text" value="${threshold.name}" placeholder="段階名" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500" data-field="name" data-index="${index}">
+                <input type="number" value="${threshold.min}" placeholder="最小値" class="w-20 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500" data-field="min" data-index="${index}">
+                <span class="text-gray-500">-</span>
+                <input type="number" value="${threshold.max === -1 ? '' : threshold.max}" placeholder="最大値" class="w-20 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500" data-field="max" data-index="${index}">
+                <button type="button" onclick="removeThresholdRow(${index})" class="p-2 text-red-600 hover:text-red-800 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            // Add event listeners for real-time updates
+            div.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updateThresholdValue);
+            });
+            
+            return div;
+        }
+
+        function renderImages() {
+            const container = document.getElementById('images-container');
+            container.innerHTML = '';
+            
+            currentConfig.images.forEach((imageUrl, index) => {
+                const row = createImageRow(imageUrl, index);
+                container.appendChild(row);
+            });
+        }
+
+        function createImageRow(imageUrl, index) {
+            const div = document.createElement('div');
+            div.className = 'flex space-x-2 items-center p-3 bg-gray-50 rounded-lg';
+            div.innerHTML = `
+                <span class="text-sm font-medium text-gray-600 w-12">第${index + 1}</span>
+                <input type="url" value="${imageUrl}" placeholder="https://example.com/image.jpg" class="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" data-index="${index}">
+                <button type="button" onclick="previewImage(${index})" class="p-2 text-blue-600 hover:text-blue-800 transition-colors" title="プレビュー">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </button>
+                <button type="button" onclick="removeImageRow(${index})" class="p-2 text-red-600 hover:text-red-800 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            // Add event listener for real-time updates
+            const input = div.querySelector('input');
+            input.addEventListener('input', function() {
+                currentConfig.images[index] = this.value;
+            });
+            
+            return div;
+        }
+
+        function updateThresholdValue(e) {
+            const index = parseInt(e.target.dataset.index);
+            const field = e.target.dataset.field;
+            let value = e.target.value;
+            
+            if (field === 'min' || field === 'max') {
+                value = value === '' ? -1 : parseInt(value);
+            }
+            
+            currentConfig.thresholds[index][field] = value;
+        }
+
+        function addThresholdRow() {
+            const newThreshold = {
+                name: `新しい段階${currentConfig.thresholds.length + 1}`,
+                min: 0,
+                max: 100,
+                icon: '🌿'
+            };
+            
+            currentConfig.thresholds.push(newThreshold);
+            renderThresholds();
+        }
+
+        function addImageRow() {
+            currentConfig.images.push('');
+            renderImages();
+        }
+
+        function removeThresholdRow(index) {
+            currentConfig.thresholds.splice(index, 1);
+            renderThresholds();
+        }
+
+        function removeImageRow(index) {
+            currentConfig.images.splice(index, 1);
+            renderImages();
+        }
+
+        function previewImage(index) {
+            const imageUrl = currentConfig.images[index];
+            if (imageUrl) {
+                window.open(imageUrl, '_blank');
+            }
+        }
+
+        async function saveThresholds() {
+            try {
+                showLoading(true);
+                
+                // Validate thresholds
+                for (let i = 0; i < currentConfig.thresholds.length; i++) {
+                    const threshold = currentConfig.thresholds[i];
+                    if (!threshold.name.trim()) {
+                        throw new Error(`段階 ${i + 1} の名前が空です`);
+                    }
+                }
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Save to localStorage
+                localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
+                
+                showSuccess('閾値設定を保存しました');
+                
+                // Add success animation
+                document.getElementById('save-thresholds').classList.add('success-animation');
+                setTimeout(() => {
+                    document.getElementById('save-thresholds').classList.remove('success-animation');
+                }, 600);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function saveImages() {
+            try {
+                showLoading(true);
+                
+                // Validate image URLs
+                for (let i = 0; i < currentConfig.images.length; i++) {
+                    const url = currentConfig.images[i];
+                    if (url && !isValidUrl(url)) {
+                        throw new Error(`画像 ${i + 1} のURLが無効です`);
+                    }
+                }
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Save to localStorage
+                localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
+                
+                showSuccess('画像設定を保存しました');
+                
+                // Add success animation
+                document.getElementById('save-images').classList.add('success-animation');
+                setTimeout(() => {
+                    document.getElementById('save-images').classList.remove('success-animation');
+                }, 600);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function savePeriod() {
+            try {
+                showLoading(true);
+                
+                currentConfig.period = {
+                    start: document.getElementById('period-start').value,
+                    end: document.getElementById('period-end').value,
+                    updateInterval: parseInt(document.getElementById('update-interval').value)
+                };
+                
+                // Validate period
+                if (new Date(currentConfig.period.start) >= new Date(currentConfig.period.end)) {
+                    throw new Error('開始日は終了日より前である必要があります');
+                }
+                
+                if (currentConfig.period.updateInterval < 10) {
+                    throw new Error('更新間隔は10秒以上である必要があります');
+                }
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Save to localStorage
+                localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
+                
+                showSuccess('期間設定を保存しました');
+                
+                // Add success animation
+                document.getElementById('save-period').classList.add('success-animation');
+                setTimeout(() => {
+                    document.getElementById('save-period').classList.remove('success-animation');
+                }, 600);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                // Simulate API call for system status
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Mock data
+                const status = {
+                    apiStatus: 'normal',
+                    lastUpdate: new Date().toLocaleString('ja-JP'),
+                    totalRecords: Math.floor(Math.random() * 1000) + 500,
+                    activeUsers: Math.floor(Math.random() * 50) + 20
+                };
+                
+                document.getElementById('api-status').textContent = status.apiStatus === 'normal' ? '正常' : 'エラー';
+                document.getElementById('api-status').className = status.apiStatus === 'normal' ? 
+                    'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800' :
+                    'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800';
+                
+                document.getElementById('last-update').textContent = status.lastUpdate;
+                document.getElementById('total-records').textContent = status.totalRecords.toLocaleString();
+                document.getElementById('active-users').textContent = status.activeUsers.toLocaleString();
+                
+            } catch (error) {
+                showError('システム状況の取得に失敗しました');
+            }
+        }
+
+        function exportData() {
+            // Create CSV data
+            const csvData = [
+                ['設定項目', '値'],
+                ['閾値数', currentConfig.thresholds.length],
+                ['画像数', currentConfig.images.length],
+                ['期間開始', currentConfig.period.start],
+                ['期間終了', currentConfig.period.end],
+                ['更新間隔', currentConfig.period.updateInterval + '秒']
+            ];
+            
+            const csvContent = csvData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `tree_growth_config_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSuccess('設定データをエクスポートしました');
+            }
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.remove('hidden');
+            } else {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? '✓' : '⚠️';
+            
+            notification.className = `fixed top-20 right-4 ${bgColor} text-white p-4 rounded-lg shadow-lg z-50 max-w-sm transform transition-all`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2">${icon}</span>
+                    <span>${message}</span>
+                    <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already authenticated (for development)
+            const isAuthenticated = sessionStorage.getItem('authenticated');
+            if (isAuthenticated) {
+                document.getElementById('password-modal').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                initializeAdmin();
+            }
+        });
+
+        // Global functions for onclick handlers
+        window.removeThresholdRow = removeThresholdRow;
+        window.removeImageRow = removeImageRow;
+        window.previewImage = previewImage;
+    </script>
+</body>
+</html>
