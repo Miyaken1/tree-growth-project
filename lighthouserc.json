@@ -1,12 +1,7 @@
 {
   "ci": {
     "collect": {
-      "staticDistDir": "./dist",
-      "url": [
-        "http://localhost/index.html",
-        "http://localhost/stats.html",
-        "http://localhost/admin.html"
-      ]
+      "staticDistDir": "./dist"
     },
     "assert": {
       "assertions": {
