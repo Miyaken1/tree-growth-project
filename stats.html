@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ統計 - 樹の成長プロジェクト</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'forest-green': '#2d5016',
+                        'leaf-green': '#4a7c59',
+                        'sage-green': '#87a96b',
+                        'earth-brown': '#8b4513',
+                        'sky-blue': '#87ceeb',
+                        'cream': '#f5f5dc'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-cream text-forest-green font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl md:text-3xl font-bold text-forest-green">データ統計</h1>
+                <nav>
+                    <a href="index.html" class="bg-forest-green hover:bg-leaf-green text-white px-4 py-2 rounded-lg transition-colors">
+                        ホームに戻る
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-forest-green mb-2">今日の対話数</h3>
+                <div class="text-3xl font-bold text-leaf-green" id="todayCount">0</div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-forest-green mb-2">今週の対話数</h3>
+                <div class="text-3xl font-bold text-leaf-green" id="weekCount">0</div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-forest-green mb-2">平均参加率</h3>
+                <div class="text-3xl font-bold text-leaf-green" id="avgParticipation">0%</div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Daily Dialogue Chart -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-forest-green mb-4">日別対話数推移</h3>
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Participation Distribution -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-forest-green mb-4">参加者分布</h3>
+                <div class="chart-container">
+                    <canvas id="participationChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="mt-8">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-forest-green mb-4">詳細データ</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-sage-green text-white">
+                                <th class="px-4 py-2 text-left">日付</th>
+                                <th class="px-4 py-2 text-left">対話数</th>
+                                <th class="px-4 py-2 text-left">参加者数</th>
+                                <th class="px-4 py-2 text-left">成長レベル</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-forest-green text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2024 樹の成長プロジェクト. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/stats.js"></script>
+</body>
+</html>
+
