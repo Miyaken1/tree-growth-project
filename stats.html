@@ -232,7 +232,7 @@
     <script>
         // Configuration
         const CONFIG = {
-            API_BASE_URL: 'YOUR_GOOGLE_APPS_SCRIPT_URL', // Replace with your actual URL
+            API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwKXme_xTyr4SdKzPj0TL1eO-519j8B0uxxwLgwvjVvtiGxxVhKROH_985sfmyigg/exec',
             GROWTH_STAGES: [
                 { name: '種子', min: 0, max: 10, icon: '🌱' },
                 { name: '新芽', min: 11, max: 50, icon: '🌱' },
@@ -379,7 +379,41 @@
                 const startDate = document.getElementById('start-date').value;
                 const endDate = document.getElementById('end-date').value;
 
-                // Mock data for demo - replace with actual API call
+                // 実際のAPIを呼び出し
+                const [countResponse, breakdownResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_BASE_URL}?action=count`),
+                    fetch(`${CONFIG.API_BASE_URL}?action=breakdown&start=${startDate}&end=${endDate}`)
+                ]);
+                
+                const countData = await countResponse.json();
+                const breakdownData = await breakdownResponse.json();
+                
+                if (countData.error || breakdownData.error) {
+                    throw new Error(countData.error || breakdownData.error);
+                }
+                
+                // データの整理
+                const processedData = {
+                    summary: {
+                        totalCount: countData.totalCount || 0,
+                        totalParticipants: countData.totalParticipants || 0,
+                        previousTotalCount: Math.max(0, (countData.totalCount || 0) - 100), // 前期間の推定
+                        averageConversations: countData.averagePerParticipant || 0,
+                        activeRate: Math.round(((countData.totalParticipants || 0) / 300) * 100) // 300を想定総数とする
+                    },
+                    organizationBreakdown: breakdownData.organizationBreakdown || {},
+                    roleBreakdown: breakdownData.roleBreakdown || {},
+                    detailedBreakdown: breakdownData.detailedBreakdown || []
+                };
+
+                updateSummaryStatistics(processedData.summary);
+                updateCharts(processedData.organizationBreakdown, processedData.roleBreakdown);
+                updateDetailedTable(processedData.detailedBreakdown);
+
+            } catch (error) {
+                console.error('Error fetching statistics:', error);
+                
+                // フォールバック: モックデータを使用
                 const mockData = {
                     summary: {
                         totalCount: Math.floor(Math.random() * 1500) + 500,
@@ -402,28 +436,23 @@
                         'その他': Math.floor(Math.random() * 15) + 5
                     },
                     detailedBreakdown: [
-                        { organization: '大学', role: '教師', participants: 25, conversations: 450, average: 18 },
-                        { organization: '大学', role: '学生', participants: 35, conversations: 280, average: 8 },
-                        { organization: '中学校', role: '教師', participants: 18, conversations: 360, average: 20 },
-                        { organization: '小学校', role: '教師', participants: 22, conversations: 330, average: 15 },
-                        { organization: '細分化機関', role: '研究者', participants: 12, conversations: 240, average: 20 }
+                        { organization: '大学', role: '教師', participants: 25, conversations: 450, average: 18, participationRate: 83 },
+                        { organization: '大学', role: '学生', participants: 35, conversations: 280, average: 8, participationRate: 70 },
+                        { organization: '中学校', role: '教師', participants: 18, conversations: 360, average: 20, participationRate: 90 },
+                        { organization: '小学校', role: '教師', participants: 22, conversations: 330, average: 15, participationRate: 73 },
+                        { organization: '細分化機関', role: '研究者', participants: 12, conversations: 240, average: 20, participationRate: 60 }
                     ]
                 };
 
                 // Calculate derived values
                 mockData.summary.averageConversations = Math.round(mockData.summary.totalCount / mockData.summary.totalParticipants);
-                mockData.summary.activeRate = Math.round((mockData.summary.totalParticipants / 300) * 100); // Assuming 300 total registered users
-
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                mockData.summary.activeRate = Math.round((mockData.summary.totalParticipants / 300) * 100);
 
                 updateSummaryStatistics(mockData.summary);
                 updateCharts(mockData.organizationBreakdown, mockData.roleBreakdown);
                 updateDetailedTable(mockData.detailedBreakdown);
-
-            } catch (error) {
-                console.error('Error fetching statistics:', error);
-                showError('統計データの取得に失敗しました');
+                
+                showError('統計データの取得に失敗しました。モックデータを表示しています。');
             } finally {
                 showLoading(false);
             }
