@@ -85,6 +85,7 @@
                 <a href="index.html" class="text-gray-600 hover:text-gray-800 transition-colors">ホーム</a>
                 <a href="stats.html" class="text-gray-600 hover:text-gray-800 transition-colors">統計</a>
                 <a href="admin.html" class="text-purple-600 font-semibold hover:text-purple-800 transition-colors">管理</a>
+                <button id="logout-btn" class="hidden text-red-600 hover:text-red-800 transition-colors">ログアウト</button>
             </nav>
             <!-- Mobile Menu Button -->
             <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-600">
@@ -99,6 +100,7 @@
             <a href="index.html" class="block py-2 text-gray-600">ホーム</a>
             <a href="stats.html" class="block py-2 text-gray-600">統計</a>
             <a href="admin.html" class="block py-2 text-purple-600 font-semibold">管理</a>
+            <button id="mobile-logout-btn" class="hidden block py-2 text-red-600 w-full text-left">ログアウト</button>
         </div>
     </header>
 
@@ -281,7 +283,7 @@
     <script>
         // Configuration
         const CONFIG = {
-            API_BASE_URL: 'YOUR_GOOGLE_APPS_SCRIPT_URL', // Replace with your actual URL
+            API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwKXme_xTyr4SdKzPj0TL1eO-519j8B0uxxwLgwvjVvtiGxxVhKROH_985sfmyigg/exec',
             PASSWORD_HASH: 'd74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1', // SHA-256 of "admin123"
             DEFAULT_THRESHOLDS: [
                 { name: '種子', min: 0, max: 10, icon: '🌱' },
@@ -321,6 +323,29 @@
             menu.classList.toggle('hidden');
         });
 
+        // Logout functionality
+        function logout() {
+            // セッションをクリア
+            sessionStorage.removeItem('authenticated');
+            
+            // ログアウトボタンを非表示
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('mobile-logout-btn').classList.add('hidden');
+            
+            // 管理画面を非表示にしてログイン画面を表示
+            document.getElementById('admin-content').classList.add('hidden');
+            document.getElementById('password-modal').classList.remove('hidden');
+            
+            // パスワード入力欄をクリア
+            document.getElementById('admin-password').value = '';
+            
+            showSuccess('ログアウトしました');
+        }
+
+        // ログアウトボタンのイベントリスナー
+        document.getElementById('logout-btn').addEventListener('click', logout);
+        document.getElementById('mobile-logout-btn').addEventListener('click', logout);
+
         // Password authentication
         async function hashPassword(password) {
             const encoder = new TextEncoder();
@@ -347,15 +372,20 @@
                 
                 // パスワードチェック（複数の方法でサポート）
                 const validPasswords = [
-                    'admin123',  // 直接比較（開発用）
+                    'admin123',  // 旧パスワード（互換性用）
+                    '1118',      // 新パスワード（直接比較）
                     hashedPassword === CONFIG.PASSWORD_HASH,  // ハッシュ比較
-                    hashedPassword === '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'  // admin123の正しいハッシュ
+                    hashedPassword === '70ce00b8593b2c45a4d4f23c9f95c87fc6983cede7e4bbf1e1d738a42f12b0f8'  // 1118の正しいハッシュ
                 ];
                 
-                if (password === 'admin123' || hashedPassword === '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9') {
+                if (password === '1118' || password === 'admin123' || hashedPassword === '70ce00b8593b2c45a4d4f23c9f95c87fc6983cede7e4bbf1e1d738a42f12b0f8') {
                     // Authentication successful
                     document.getElementById('password-modal').classList.add('hidden');
                     document.getElementById('admin-content').classList.remove('hidden');
+                    
+                    // ログアウトボタンを表示
+                    document.getElementById('logout-btn').classList.remove('hidden');
+                    document.getElementById('mobile-logout-btn').classList.remove('hidden');
                     
                     // Update last login
                     const now = new Date().toLocaleString('ja-JP');
@@ -408,13 +438,47 @@
         }
 
         function loadConfiguration() {
-            // Load saved configuration or use defaults
-            const savedConfig = localStorage.getItem('adminConfig');
-            if (savedConfig) {
-                currentConfig = { ...currentConfig, ...JSON.parse(savedConfig) };
-            }
-            
-            // Set period inputs
+            // 実際のAPIから設定を読み込み
+            fetch(`${CONFIG.API_BASE_URL}?action=config`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.warn('Failed to load config from API:', data.error);
+                        // ローカルストレージまたはデフォルト設定を使用
+                        const savedConfig = localStorage.getItem('adminConfig');
+                        if (savedConfig) {
+                            currentConfig = { ...currentConfig, ...JSON.parse(savedConfig) };
+                        }
+                    } else {
+                        // APIから取得した設定をマージ
+                        currentConfig = {
+                            thresholds: data.thresholds || CONFIG.DEFAULT_THRESHOLDS,
+                            images: data.images || CONFIG.DEFAULT_IMAGES,
+                            period: data.period || currentConfig.period
+                        };
+                        
+                        // ローカルストレージにも保存
+                        localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
+                    }
+                    
+                    // UI更新
+                    updatePeriodInputs();
+                    updateLastLogin();
+                })
+                .catch(error => {
+                    console.error('Error loading configuration:', error);
+                    // フォールバック: ローカルストレージを使用
+                    const savedConfig = localStorage.getItem('adminConfig');
+                    if (savedConfig) {
+                        currentConfig = { ...currentConfig, ...JSON.parse(savedConfig) };
+                    }
+                    updatePeriodInputs();
+                    updateLastLogin();
+                });
+        }
+        
+        function updatePeriodInputs() {
+            // 期間設定の初期値
             const today = new Date().toISOString().split('T')[0];
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -422,8 +486,10 @@
             document.getElementById('period-start').value = currentConfig.period.start || oneMonthAgo.toISOString().split('T')[0];
             document.getElementById('period-end').value = currentConfig.period.end || today;
             document.getElementById('update-interval').value = currentConfig.period.updateInterval || 60;
-            
-            // Load last login
+        }
+        
+        function updateLastLogin() {
+            // 最後のログイン時刻を表示
             const lastLogin = localStorage.getItem('lastLogin');
             if (lastLogin) {
                 document.getElementById('last-login').textContent = lastLogin;
@@ -552,7 +618,7 @@
             try {
                 showLoading(true);
                 
-                // Validate thresholds
+                // 閾値の検証
                 for (let i = 0; i < currentConfig.thresholds.length; i++) {
                     const threshold = currentConfig.thresholds[i];
                     if (!threshold.name.trim()) {
@@ -560,10 +626,26 @@
                     }
                 }
                 
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // 実際のAPIに保存
+                const response = await fetch(CONFIG.API_BASE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'config',
+                        pw: '1118', // 新しいパスワード
+                        config: JSON.stringify(currentConfig)
+                    })
+                });
                 
-                // Save to localStorage
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                // ローカルストレージにも保存
                 localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
                 
                 showSuccess('閾値設定を保存しました');
@@ -575,6 +657,7 @@
                 }, 600);
                 
             } catch (error) {
+                console.error('Save thresholds error:', error);
                 showError(error.message);
             } finally {
                 showLoading(false);
@@ -585,7 +668,7 @@
             try {
                 showLoading(true);
                 
-                // Validate image URLs
+                // 画像URLの検証
                 for (let i = 0; i < currentConfig.images.length; i++) {
                     const url = currentConfig.images[i];
                     if (url && !isValidUrl(url)) {
@@ -593,10 +676,26 @@
                     }
                 }
                 
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // 実際のAPIに保存
+                const response = await fetch(CONFIG.API_BASE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'config',
+                        pw: '1118',
+                        config: JSON.stringify(currentConfig)
+                    })
+                });
                 
-                // Save to localStorage
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                // ローカルストレージにも保存
                 localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
                 
                 showSuccess('画像設定を保存しました');
@@ -608,6 +707,7 @@
                 }, 600);
                 
             } catch (error) {
+                console.error('Save images error:', error);
                 showError(error.message);
             } finally {
                 showLoading(false);
@@ -624,7 +724,7 @@
                     updateInterval: parseInt(document.getElementById('update-interval').value)
                 };
                 
-                // Validate period
+                // 期間の検証
                 if (new Date(currentConfig.period.start) >= new Date(currentConfig.period.end)) {
                     throw new Error('開始日は終了日より前である必要があります');
                 }
@@ -633,10 +733,26 @@
                     throw new Error('更新間隔は10秒以上である必要があります');
                 }
                 
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // 実際のAPIに保存
+                const response = await fetch(CONFIG.API_BASE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'config',
+                        pw: '1118',
+                        config: JSON.stringify(currentConfig)
+                    })
+                });
                 
-                // Save to localStorage
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                // ローカルストレージにも保存
                 localStorage.setItem('adminConfig', JSON.stringify(currentConfig));
                 
                 showSuccess('期間設定を保存しました');
@@ -648,6 +764,7 @@
                 }, 600);
                 
             } catch (error) {
+                console.error('Save period error:', error);
                 showError(error.message);
             } finally {
                 showLoading(false);
@@ -656,27 +773,42 @@
 
         async function loadSystemStatus() {
             try {
-                // Simulate API call for system status
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // 実際のAPIからシステム状況を取得
+                const [healthResponse, countResponse] = await Promise.all([
+                    fetch(`${CONFIG.API_BASE_URL}?action=health`),
+                    fetch(`${CONFIG.API_BASE_URL}?action=count`)
+                ]);
                 
-                // Mock data
-                const status = {
-                    apiStatus: 'normal',
-                    lastUpdate: new Date().toLocaleString('ja-JP'),
-                    totalRecords: Math.floor(Math.random() * 1000) + 500,
-                    activeUsers: Math.floor(Math.random() * 50) + 20
-                };
+                const healthData = await healthResponse.json();
+                const countData = await countResponse.json();
                 
-                document.getElementById('api-status').textContent = status.apiStatus === 'normal' ? '正常' : 'エラー';
-                document.getElementById('api-status').className = status.apiStatus === 'normal' ? 
+                // APIステータス
+                const apiStatus = healthData.status === 'healthy' ? 'normal' : 'error';
+                document.getElementById('api-status').textContent = apiStatus === 'normal' ? '正常' : 'エラー';
+                document.getElementById('api-status').className = apiStatus === 'normal' ? 
                     'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800' :
                     'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800';
                 
-                document.getElementById('last-update').textContent = status.lastUpdate;
-                document.getElementById('total-records').textContent = status.totalRecords.toLocaleString();
-                document.getElementById('active-users').textContent = status.activeUsers.toLocaleString();
+                // 最終更新時刻
+                document.getElementById('last-update').textContent = new Date().toLocaleString('ja-JP');
+                
+                // データ件数
+                document.getElementById('total-records').textContent = (healthData.dataRows || countData.totalParticipants || 0).toLocaleString();
+                
+                // アクティブユーザー数
+                document.getElementById('active-users').textContent = (countData.validResponses || countData.totalParticipants || 0).toLocaleString();
                 
             } catch (error) {
+                console.error('System status error:', error);
+                
+                // エラー時はエラー状態を表示
+                document.getElementById('api-status').textContent = 'エラー';
+                document.getElementById('api-status').className = 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800';
+                
+                document.getElementById('last-update').textContent = 'データ取得失敗';
+                document.getElementById('total-records').textContent = 'N/A';
+                document.getElementById('active-users').textContent = 'N/A';
+                
                 showError('システム状況の取得に失敗しました');
             }
         }
@@ -772,6 +904,11 @@
             if (isAuthenticated === 'true') {
                 document.getElementById('password-modal').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
+                
+                // ログアウトボタンを表示
+                document.getElementById('logout-btn').classList.remove('hidden');
+                document.getElementById('mobile-logout-btn').classList.remove('hidden');
+                
                 initializeAdmin();
                 
                 // Update last login display
@@ -786,7 +923,7 @@
             testButton.textContent = 'テストログイン（開発用）';
             testButton.className = 'mt-4 w-full bg-gray-500 text-white px-4 py-2 rounded-lg text-sm';
             testButton.onclick = function() {
-                document.getElementById('admin-password').value = 'admin123';
+                document.getElementById('admin-password').value = '1118';
                 document.getElementById('password-form').dispatchEvent(new Event('submit'));
             };
             document.getElementById('password-form').appendChild(testButton);
