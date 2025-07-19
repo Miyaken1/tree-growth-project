@@ -1,0 +1,24 @@
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "./dist",
+      "url": [
+        "http://localhost/index.html",
+        "http://localhost/stats.html",
+        "http://localhost/admin.html"
+      ]
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", {"minScore": 0.9}],
+        "categories:accessibility": ["warn", {"minScore": 0.8}],
+        "categories:best-practices": ["warn", {"minScore": 0.8}],
+        "categories:seo": ["warn", {"minScore": 0.8}]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
+

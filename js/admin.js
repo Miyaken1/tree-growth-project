@@ -1,219 +1,271 @@
-// Admin panel functionality
+// Enhanced Admin page functionality with SHA-256 authentication and API integration
 
-class AdminApp {
-    constructor() {
-        this.apiBaseUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-        this.isAuthenticated = false;
-        this.init();
-    }
+// Configuration
+const API_BASE_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
 
-    init() {
-        this.checkAuthentication();
-        this.setupEventListeners();
-        this.loadConfiguration();
-    }
+// Global variables
+let currentPasswordHash = null;
+let thresholdCount = 0;
+let imageUrlCount = 0;
 
-    checkAuthentication() {
-        const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-        if (isLoggedIn) {
-            this.showAdminPanel();
-        } else {
-            this.showLoginForm();
-        }
-    }
+document.addEventListener('DOMContentLoaded', function() {
+  initializeElements();
+  showPasswordModal();
+});
 
-    showLoginForm() {
-        document.getElementById('loginForm').style.display = 'flex';
-        document.getElementById('adminPanel').classList.add('hidden');
-    }
+function initializeElements() {
+  const modalLogin = document.getElementById('modal-login');
+  const modalCancel = document.getElementById('modal-cancel');
+  const modalPassword = document.getElementById('modal-password');
+  const saveConfigBtn = document.getElementById('save-config');
+  const reloadConfigBtn = document.getElementById('reload-config');
+  const addThresholdBtn = document.getElementById('add-threshold');
+  const addImageUrlBtn = document.getElementById('add-image-url');
 
-    showAdminPanel() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminPanel').classList.remove('hidden');
-        this.isAuthenticated = true;
-        this.loadSystemStatus();
-    }
+  // Modal event listeners
+  modalLogin.addEventListener('click', handleLogin);
+  modalCancel.addEventListener('click', () => window.location.href = 'index.html');
+  modalPassword.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
 
-    setupEventListeners() {
-        // Login form
-        document.getElementById('authForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleLogin();
-        });
-
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.handleLogout();
-        });
-
-        // Control buttons
-        document.getElementById('refreshDataBtn').addEventListener('click', () => {
-            this.refreshData();
-        });
-
-        document.getElementById('resetCounterBtn').addEventListener('click', () => {
-            this.resetCounter();
-        });
-
-        document.getElementById('exportDataBtn').addEventListener('click', () => {
-            this.exportData();
-        });
-
-        // Configuration
-        document.getElementById('saveConfigBtn').addEventListener('click', () => {
-            this.saveConfiguration();
-        });
-    }
-
-    async handleLogin() {
-        const password = document.getElementById('password').value;
-        
-        // Simple password check (in production, use proper authentication)
-        if (password === 'admin123') {
-            localStorage.setItem('adminLoggedIn', 'true');
-            this.showAdminPanel();
-        } else {
-            alert('パスワードが正しくありません');
-        }
-    }
-
-    handleLogout() {
-        localStorage.removeItem('adminLoggedIn');
-        this.isAuthenticated = false;
-        this.showLoginForm();
-    }
-
-    async refreshData() {
-        if (!this.isAuthenticated) return;
-
-        try {
-            const response = await fetch(`${this.apiBaseUrl}?action=refresh`, {
-                method: 'POST'
-            });
-            
-            if (response.ok) {
-                alert('データを更新しました');
-                this.loadSystemStatus();
-            } else {
-                throw new Error('更新に失敗しました');
-            }
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            alert('データ更新中にエラーが発生しました');
-        }
-    }
-
-    async resetCounter() {
-        if (!this.isAuthenticated) return;
-
-        if (confirm('カウンターをリセットしますか？この操作は取り消せません。')) {
-            try {
-                const response = await fetch(`${this.apiBaseUrl}?action=reset`, {
-                    method: 'POST'
-                });
-                
-                if (response.ok) {
-                    alert('カウンターをリセットしました');
-                    this.loadSystemStatus();
-                } else {
-                    throw new Error('リセットに失敗しました');
-                }
-            } catch (error) {
-                console.error('Error resetting counter:', error);
-                alert('カウンターリセット中にエラーが発生しました');
-            }
-        }
-    }
-
-    exportData() {
-        if (!this.isAuthenticated) return;
-
-        // Create mock CSV data
-        const csvData = [
-            ['日付', '対話数', '参加者数'],
-            ['2024-01-15', '23', '12'],
-            ['2024-01-16', '31', '15'],
-            ['2024-01-17', '28', '14']
-        ];
-
-        const csvContent = csvData.map(row => row.join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `tree-growth-data-${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    }
-
-    loadConfiguration() {
-        // Load saved configuration from localStorage
-        const config = JSON.parse(localStorage.getItem('adminConfig') || '{}');
-        
-        document.getElementById('apiUrl').value = config.apiUrl || '';
-        document.getElementById('formUrl').value = config.formUrl || '';
-        document.getElementById('refreshInterval').value = config.refreshInterval || 30;
-        document.getElementById('growthThreshold').value = config.growthThreshold || 100;
-    }
-
-    saveConfiguration() {
-        if (!this.isAuthenticated) return;
-
-        const config = {
-            apiUrl: document.getElementById('apiUrl').value,
-            formUrl: document.getElementById('formUrl').value,
-            refreshInterval: document.getElementById('refreshInterval').value,
-            growthThreshold: document.getElementById('growthThreshold').value
-        };
-
-        localStorage.setItem('adminConfig', JSON.stringify(config));
-        alert('設定を保存しました');
-    }
-
-    async loadSystemStatus() {
-        if (!this.isAuthenticated) return;
-
-        try {
-            // Mock system status data
-            const status = {
-                apiConnected: true,
-                lastUpdate: new Date().toLocaleString('ja-JP'),
-                totalRecords: 1247,
-                errorCount: 0
-            };
-
-            this.updateSystemStatus(status);
-        } catch (error) {
-            console.error('Error loading system status:', error);
-        }
-    }
-
-    updateSystemStatus(status) {
-        const apiStatusElement = document.getElementById('apiStatus');
-        const statusIndicator = apiStatusElement.querySelector('div');
-        const statusText = apiStatusElement.querySelector('span');
-
-        if (status.apiConnected) {
-            statusIndicator.className = 'w-3 h-3 rounded-full bg-green-400 mr-2';
-            statusText.textContent = '接続中';
-        } else {
-            statusIndicator.className = 'w-3 h-3 rounded-full bg-red-400 mr-2';
-            statusText.textContent = '切断';
-        }
-
-        document.getElementById('lastUpdate').textContent = status.lastUpdate;
-        document.getElementById('totalRecords').textContent = status.totalRecords.toLocaleString();
-        document.getElementById('errorCount').textContent = status.errorCount;
-    }
+  // Admin panel event listeners
+  saveConfigBtn.addEventListener('click', saveConfiguration);
+  reloadConfigBtn.addEventListener('click', loadConfiguration);
+  addThresholdBtn.addEventListener('click', addThresholdInput);
+  addImageUrlBtn.addEventListener('click', addImageUrlInput);
 }
 
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new AdminApp();
-});
+function showPasswordModal() {
+  document.getElementById('password-modal').classList.remove('hidden');
+  document.getElementById('modal-password').focus();
+}
+
+function hidePasswordModal() {
+  document.getElementById('password-modal').classList.add('hidden');
+}
+
+function showErrorMessage(message) {
+  const errorDiv = document.getElementById('error-message');
+  errorDiv.textContent = message;
+  errorDiv.classList.remove('hidden');
+}
+
+function hideErrorMessage() {
+  document.getElementById('error-message').classList.add('hidden');
+}
+
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function handleLogin() {
+  const password = document.getElementById('modal-password').value;
+  
+  if (!password) {
+    showErrorMessage('パスワードを入力してください');
+    return;
+  }
+
+  try {
+    hideErrorMessage();
+    
+    // Hash the password
+    currentPasswordHash = await hashPassword(password);
+    
+    // Test authentication by trying to fetch config
+    const response = await fetch(`${API_BASE_URL}?action=config&pw=${currentPasswordHash}`);
+    const result = await response.json();
+    
+    if (result.error && result.status === 401) {
+      showErrorMessage('パスワードが正しくありません');
+      return;
+    }
+    
+    if (result.error) {
+      showErrorMessage('認証エラー: ' + result.error);
+      return;
+    }
+    
+    // Authentication successful
+    hidePasswordModal();
+    document.getElementById('admin-panel').classList.remove('hidden');
+    
+    // Load configuration
+    await loadConfiguration();
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    showErrorMessage('ログインに失敗しました: ' + error.message);
+  }
+}
+
+async function loadConfiguration() {
+  try {
+    const response = await fetch(`${API_BASE_URL}?action=config&pw=${currentPasswordHash}`);
+    const result = await response.json();
+    
+    if (result.error) {
+      alert('設定の読み込みに失敗しました: ' + result.error);
+      return;
+    }
+    
+    const config = result.config;
+    
+    // Clear existing inputs
+    document.getElementById('thresholds-container').innerHTML = '';
+    document.getElementById('image-urls-container').innerHTML = '';
+    thresholdCount = 0;
+    imageUrlCount = 0;
+    
+    // Load period settings
+    document.getElementById('period-start').value = config['period.start'] || '';
+    document.getElementById('period-end').value = config['period.end'] || '';
+    
+    // Load thresholds
+    const thresholds = [];
+    let i = 0;
+    while (config[`thresholds.${i}`] !== undefined) {
+      thresholds.push(parseFloat(config[`thresholds.${i}`]));
+      i++;
+    }
+    
+    thresholds.forEach(threshold => {
+      addThresholdInput(threshold);
+    });
+    
+    // Load image URLs
+    const imageUrls = [];
+    i = 0;
+    while (config[`imageUrls.${i}`] !== undefined) {
+      imageUrls.push(config[`imageUrls.${i}`]);
+      i++;
+    }
+    
+    imageUrls.forEach(url => {
+      addImageUrlInput(url);
+    });
+    
+    // If no thresholds or image URLs exist, add empty ones
+    if (thresholds.length === 0) {
+      addThresholdInput();
+      addThresholdInput();
+    }
+    
+    if (imageUrls.length === 0) {
+      addImageUrlInput();
+      addImageUrlInput();
+    }
+    
+  } catch (error) {
+    console.error('Load configuration error:', error);
+    alert('設定の読み込み中にエラーが発生しました: ' + error.message);
+  }
+}
+
+function addThresholdInput(value = '') {
+  const container = document.getElementById('thresholds-container');
+  const div = document.createElement('div');
+  div.className = 'flex items-center space-x-2';
+  div.innerHTML = `
+    <label class="text-sm font-medium text-gray-700 w-16">閾値 ${thresholdCount + 1}:</label>
+    <input type="number" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="数値を入力" value="${value}" step="0.01">
+    <button type="button" class="bg-red-600 text-white py-2 px-3 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500" onclick="this.parentElement.remove(); updateThresholdLabels()">削除</button>
+  `;
+  container.appendChild(div);
+  thresholdCount++;
+}
+
+function addImageUrlInput(value = '') {
+  const container = document.getElementById('image-urls-container');
+  const div = document.createElement('div');
+  div.className = 'flex items-center space-x-2';
+  div.innerHTML = `
+    <label class="text-sm font-medium text-gray-700 w-20">画像 ${imageUrlCount + 1}:</label>
+    <input type="url" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/image.jpg" value="${value}">
+    <button type="button" class="bg-red-600 text-white py-2 px-3 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500" onclick="this.parentElement.remove(); updateImageUrlLabels()">削除</button>
+  `;
+  container.appendChild(div);
+  imageUrlCount++;
+}
+
+function updateThresholdLabels() {
+  const container = document.getElementById('thresholds-container');
+  const labels = container.querySelectorAll('label');
+  labels.forEach((label, index) => {
+    label.textContent = `閾値 ${index + 1}:`;
+  });
+  thresholdCount = labels.length;
+}
+
+function updateImageUrlLabels() {
+  const container = document.getElementById('image-urls-container');
+  const labels = container.querySelectorAll('label');
+  labels.forEach((label, index) => {
+    label.textContent = `画像 ${index + 1}:`;
+  });
+  imageUrlCount = labels.length;
+}
+
+async function saveConfiguration() {
+  try {
+    // Collect configuration data
+    const config = {};
+    
+    // Period settings
+    config['period.start'] = document.getElementById('period-start').value;
+    config['period.end'] = document.getElementById('period-end').value;
+    
+    // Thresholds
+    const thresholdInputs = document.querySelectorAll('#thresholds-container input[type="number"]');
+    thresholdInputs.forEach((input, index) => {
+      if (input.value.trim() !== '') {
+        config[`thresholds.${index}`] = parseFloat(input.value);
+      }
+    });
+    
+    // Image URLs
+    const imageUrlInputs = document.querySelectorAll('#image-urls-container input[type="url"]');
+    imageUrlInputs.forEach((input, index) => {
+      if (input.value.trim() !== '') {
+        config[`imageUrls.${index}`] = input.value.trim();
+      }
+    });
+    
+    // Send POST request
+    const response = await fetch(`${API_BASE_URL}?action=config&pw=${currentPasswordHash}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config)
+    });
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      alert('設定の保存に失敗しました: ' + result.error);
+      return;
+    }
+    
+    if (result.status === 'ok') {
+      alert('設定が正常に保存されました');
+    } else {
+      alert('設定の保存結果が不明です');
+    }
+    
+  } catch (error) {
+    console.error('Save configuration error:', error);
+    alert('設定の保存中にエラーが発生しました: ' + error.message);
+  }
+}
+
+// Make functions available globally for onclick handlers
+window.updateThresholdLabels = updateThresholdLabels;
+window.updateImageUrlLabels = updateImageUrlLabels;
 
