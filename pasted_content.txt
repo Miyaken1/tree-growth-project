@@ -1,0 +1,123 @@
+以下では、**「ローカルで ZIP を展開 → GitHub に安全にアップロード → ライブサイトとスクリプトを連携」** を“アップロードのみ”の作業に絞って手順化しました。先に概要を 1 段落でまとめ、その後に詳細手順・注意点を段階的に説明します。
+
+> **概要**
+> ZIP をローカルで解凍したら、GitHub CLI または git コマンドでリポジトリをクローンし、プロジェクト一式を配置してコミットします。`git push` 時は **HTTPS URL に PAT を埋め込むか、環境変数 / GitHub CLI で認証** し、PAT をリポジトリやコードに絶対に含めません。続いて `src/*.js` 内の `API_URL` をご自身の Apps Script URL に置換し、`pnpm run build` で生成された `dist/` をそのまま push すれば、GitHub Pages が即時反映されます。以下のセクションで具体的なコマンドとポイントを示します。
+
+---
+
+## 1. PAT の安全な扱い
+
+### 1‑1. 直接 URL に埋める方法（単発 push 用）
+
+```bash
+git push https://<YOUR_PAT>@github.com/Miyaken1/tree-growth-project.git main
+```
+
+GitHub はユーザー名を省略しても PAT で認証できます。([Stack Overflow][1])
+
+### 1‑2. `GITHUB_TOKEN` 環境変数（推奨）
+
+```bash
+export GITHUB_TOKEN=<YOUR_PAT>
+git remote set-url origin https://github.com/Miyaken1/tree-growth-project.git
+git push origin main
+```
+
+Git は自動で `GITHUB_TOKEN` を認証ヘッダに注入します。([GitHub Docs][2])
+
+> **NG パターン**
+>
+> * PAT を `.env` や JS にハードコードして push
+> * GitHub Pages URL に PAT クエリを付与
+>   流出した場合は GitHub → Settings → **Tokens** で即失効してください。([GitHub Docs][2])
+
+---
+
+## 2. アップロード手順（ローカル → GitHub）
+
+| 手順            | コマンド / 操作                                                        | 補足                     |
+| ------------- | ---------------------------------------------------------------- | ---------------------- |
+| ① クローン        | `git clone https://github.com/Miyaken1/tree-growth-project.git`  | 既存 repo を取得            |
+| ② ZIP 解凍      | `unzip tree-growth-site.zip -d tree-growth-project`              | `index.html` 等を上書き     |
+| ③ 依存追加        | `cd tree-growth-project && pnpm i`                               | `vite` が devDep として登録済 |
+| ④ API\_URL 置換 | `sed -i 's~YOUR_DEPLOY_ID~AKfycbwmeveXSc0ihOnOgQ...~g' src/*.js` | Apps Script URL を埋め込む  |
+| ⑤ コミット        | `git add . && git commit -m "feat: initial upload"`              |                        |
+| ⑥ Push        | PAT 認証いずれかで `git push origin main`                               |                        |
+
+---
+
+## 3. GitHub Pages と CI
+
+### 3‑1. GH Pages 自動公開
+
+* GitHub Pages は **`main` branch / root** を公開設定済みなら、HTML を push するだけで即反映されます。([GitHub Docs][3])
+* Vite の `build` 出力 (`dist/`) をルートに配置するか、`docs/` に出力して「Source: `/docs`」に設定しても OK。
+
+### 3‑2. CI ワークフロー（任意）
+
+後から **Lighthouse CI Action** を追加すると、パフォーマンス低下をプルリク単位で検知できます。([GitHub][4]) ([GitHub][5])
+
+```yaml
+# .github/workflows/deploy.yml
+name: Build & Deploy
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm i && pnpm run build
+      - uses: actions/upload-pages-artifact@v2
+        with: { path: dist }
+      - uses: actions/deploy-pages@v2
+```
+
+---
+
+## 4. Apps Script 側の CORS 設定確認
+
+フロント Fetch が `CORS` で弾かれる場合は、`doGet/DoPost` でヘッダを追加します。
+
+```js
+return ContentService
+  .createTextOutput(JSON.stringify(data))
+  .setMimeType(ContentService.MimeType.JSON)
+  .setHeader('Access-Control-Allow-Origin', '*');
+```
+
+Stack Overflow でも同手法が紹介されています。([Stack Overflow][6], [Stack Overflow][7])
+
+---
+
+## 5. 万一 PAT を公開してしまったら
+
+1. **速やかにトークン失効** → GitHub Settings > Developer settings > **Personal access tokens**。
+2. **履歴から削除** — `git filter-repo` で PAT が含まれるコミットを根こそぎ除去。([GitHub Docs][8]) ([Stack Overflow][9])
+3. 強制 push:
+
+   ```bash
+   git push --force origin main
+   ```
+
+---
+
+## 6. まとめチェックリスト
+
+* [x] ZIP 展開ファイルをリポジトリに配置
+* [x] `src/*.js` の `API_URL` を Apps Script URL に更新
+* [x] PAT を **環境変数または CLI** でのみ使用し、コードには含めない
+* [x] `git add` → `commit` → `push`
+* [x] GitHub Pages が新 HTML を反映したことをブラウザで確認
+
+これで「アップロードのみ」でプロジェクトを安全に公開できます。ライブサイトにアクセスして画像やカウンターが動作するか確認してください。
+
+[1]: https://stackoverflow.com/questions/18935539/authenticate-with-github-using-a-token?utm_source=chatgpt.com "Authenticate with GitHub using a token - Stack Overflow"
+[2]: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens?utm_source=chatgpt.com "Managing your personal access tokens - GitHub Docs"
+[3]: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll?utm_source=chatgpt.com "Setting up a GitHub Pages site with Jekyll"
+[4]: https://github.com/marketplace/actions/lighthouse-ci-action?utm_source=chatgpt.com "Lighthouse CI Action - GitHub Marketplace"
+[5]: https://github.com/GoogleChrome/lighthouse-ci?utm_source=chatgpt.com "GoogleChrome/lighthouse-ci - GitHub"
+[6]: https://stackoverflow.com/questions/66234681/getting-cors-using-js-and-google-apps-script?utm_source=chatgpt.com "Getting CORS using JS and Google Apps script - Stack Overflow"
+[7]: https://stackoverflow.com/questions/53433938/how-do-i-allow-a-cors-requests-in-my-google-script?utm_source=chatgpt.com "How do i allow a CORS requests in my google script? - Stack Overflow"
+[8]: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository?utm_source=chatgpt.com "Removing sensitive data from a repository - GitHub Docs"
+[9]: https://stackoverflow.com/questions/872565/remove-sensitive-files-and-their-commits-from-git-history?utm_source=chatgpt.com "Remove sensitive files and their commits from Git history"

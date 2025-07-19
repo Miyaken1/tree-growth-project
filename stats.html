@@ -1,56 +1,31 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manus AI Project - Stats</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-  </head>
-  <body class="bg-gray-100 min-h-screen">
-    <div id="app" class="container mx-auto px-4 py-8">
-      <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">統計ダッシュボード</h1>
-      
-      <!-- Navigation -->
-      <nav class="mb-8">
-        <ul class="flex justify-center space-x-6">
-          <li><a href="index.html" class="text-blue-600 hover:text-blue-800 font-medium">Index</a></li>
-          <li><a href="stats.html" class="text-blue-600 hover:text-blue-800 font-medium">Stats</a></li>
-          <li><a href="admin.html" class="text-blue-600 hover:text-blue-800 font-medium">Admin</a></li>
-        </ul>
-      </nav>
-
-      <!-- Chart Container -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4 text-gray-800">データ分析</h2>
-        <div class="relative h-96">
-          <canvas id="statsChart" class="w-full h-full"></canvas>
-        </div>
-      </div>
-
-      <!-- Stats Summary -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">今日の訪問者</h3>
-          <div class="text-3xl font-bold text-blue-600" id="today-visitors">0</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">今月の訪問者</h3>
-          <div class="text-3xl font-bold text-green-600" id="month-visitors">0</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">コンバージョン率</h3>
-          <div class="text-3xl font-bold text-purple-600" id="conversion-rate">0%</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">平均セッション時間</h3>
-          <div class="text-3xl font-bold text-orange-600" id="avg-session">0m</div>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>Data Stats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="w-full flex justify-between items-center p-4 bg-white shadow">
+    <h1 class="text-xl font-bold">データ可視化</h1>
+    <div class="space-x-4">
+      <a href="index.html" class="text-blue-500 underline">トップへ戻る</a>
+      <a href="admin.html" class="text-blue-500 underline">管理</a>
     </div>
+  </header>
 
-    <script type="module" src="/src/main.js"></script>
-    <script type="module" src="/src/stats.js"></script>
-  </body>
+  <main class="p-6 space-y-4">
+    <div class="flex gap-4">
+      <label>開始: <input type="date" id="startDate" class="border p-1"></label>
+      <label>終了: <input type="date" id="endDate" class="border p-1"></label>
+      <button id="reloadBtn" class="px-4 py-1 bg-blue-500 text-white rounded">更新</button>
+    </div>
+    <canvas id="barChart" class="max-w-5xl mx-auto"></canvas>
+  </main>
+
+  <script type="module" src="src/stats.js"></script>
+</body>
 </html>
-

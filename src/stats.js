@@ -1,60 +1,31 @@
-// Stats page specific functionality
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Chart.js
-  const ctx = document.getElementById('statsChart').getContext('2d')
-  
-  const chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-      datasets: [{
-        label: '訪問者数',
-        data: [120, 190, 300, 500, 200, 300],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 205, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 205, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)'
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  })
 
-  // Mock API call to get stats
-  function updateStats() {
-    // Simulate API call
-    setTimeout(() => {
-      document.getElementById('today-visitors').textContent = Math.floor(Math.random() * 100) + 50
-      document.getElementById('month-visitors').textContent = Math.floor(Math.random() * 5000) + 1000
-      document.getElementById('conversion-rate').textContent = (Math.random() * 10 + 2).toFixed(1) + '%'
-      document.getElementById('avg-session').textContent = Math.floor(Math.random() * 10 + 2) + 'm'
-    }, 1000)
+import Chart from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js';
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbwmeveXSc0ihOnOgQhtX5Mtaj1QWiATUlGXEIJwlBAgl_yGe7ULgjpVfYwC8IWiOS4/exec';
+
+const ctx = document.getElementById('barChart');
+let barChart;
+async function loadData() {
+  const start = document.getElementById('startDate').value;
+  const end = document.getElementById('endDate').value;
+  const url = `${API_URL}?action=breakdown&start=${start}&end=${end}`;
+  const res = await fetch(url, {cache:'no-store'});
+  const {data=[]} = await res.json();
+  const labels = data.map(d=>d.label);
+  const values = data.map(d=>d.value);
+
+  if (!barChart) {
+    barChart = new Chart(ctx, {
+      type:'bar',
+      data:{labels,
+        datasets:[{label:'人数',data:values}]},
+      options:{responsive:true,maintainAspectRatio:false}
+    });
+  } else {
+    barChart.data.labels = labels;
+    barChart.data.datasets[0].data = values;
+    barChart.update();
   }
-
-  // Update stats on page load
-  updateStats()
-
-  // Update stats every 60 seconds
-  setInterval(updateStats, 60000)
-})
-
+}
+document.getElementById('reloadBtn').addEventListener('click', loadData);
+loadData();
